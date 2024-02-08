@@ -1,0 +1,430 @@
+---
+title: "EFA, PCA, and CFA behavioral analysis script"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+#From Tom Olino's EFA/CFA script
+#install.packages('lavaan')
+#install.packages('haven')
+#install.packages('tidyverse')
+#install.packages('psych')
+#install.packages('GPArotation')
+#install.packages('lavaan')
+#install.packages('semPlot')
+#install.packages('RColorBrewer')
+#install.packages("ggplot2")
+#install.packages("corrplot")
+# install.packages("viridis")  # Install
+
+library("viridis")           # Load
+library(ggplot2)
+library(corrplot)
+library(RColorBrewer)
+
+library(haven)
+library(tidyverse)
+library(psych)
+library(GPArotation)
+library(lavaan)
+library(semPlot)
+library(RColorBrewer)
+```
+
+
+```{r}
+#data
+options(scipen=100)
+options(digits=3)
+
+setwd('C:/Users/tuq67942/Desktop/Factor analysis/Analysis/')
+
+df<- read.csv("csvs/df_nosubj.csv")
+data <- as.data.frame(df)
+
+#subset variables of interest
+# More info on invertability:
+# https://stackoverflow.com/questions/50928796/system-is-computationally-singular-reciprocal-condition-number-in-r
+#data <- subset(data, select = -c(Foil,Target)) # dropping foil to see if matrix is now invertable, dropping Target because it's so similar to Lure, dropping dependency  because it doesn't correlate with other variables
+summary(data)
+
+#normalize data
+df_norm <- scale(data)
+df_norm <- as.data.frame(df_norm)
+# re-order dataframe
+#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure")] 
+#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM","Dependency","Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')] 
+#df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM","Dependency","Foil","Lure",'PSObjLure','PSLocLure','PSAniLure')] 
+#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget')]
+df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure",'PSLocLure')] 
+
+
+
+```
+
+##Correlation matrix
+```{r}
+#correlation and significance matrices
+corr_matrix <- cor(df_norm)
+
+#function to create sig. matrix
+cor.mtest <- function(mat, ...) {
+  mat <- as.matrix(data)
+  n <- ncol(mat)
+  p.mat<- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], ...)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+#matrix of the p-value of the correlation
+p.mat <- cor.mtest(corr_matrix)
+
+```
+
+##Correlation plot
+```{r}
+corrplot(corr_matrix,
+         method = "shade",
+         addCoef.col = "black",
+         #p.mat = p.mat,
+         #insig = 'n',#"label_sig",
+         #sig.level = c(.001,0.01, 0.05),
+         #pch.cex = 0.9,
+         #pch.col = "black",
+         type = "lower",
+         tl.srt = 45,
+         tl.cex = 1,
+         tl.col = 1,
+         tl.pos = "ld",
+         number.cex = .8,
+         cl.cex = .8,
+         #title = "Bivariate Correlations",
+         mar=c(0,0,2,0),
+         col=rev(brewer.pal(n=8, name="Spectral")),
+         cl.pos = "b",
+         #bg = "white",
+         diag=FALSE)
+```
+
+##EFA
+```{r}
+#Are the data appropriate for factor analysis?
+
+
+KMO(df_norm) # you want MSA to be > .60
+
+bartlett.test(df_norm) # you want this to be significant
+```
+
+```{r}
+#parallel analysis (with actual data and simulation)
+#How many factors to retain?
+
+par_analysis <- fa.parallel(df_norm, fm = "pa", n.iter = 100)
+
+#Output of parallel analysis only shows a subset of eigenvalues
+#The following creates the full list of eigenvalues
+
+#Read names of variables in the dataframe
+names(par_analysis)
+
+#Organize the variable labels into the same order as the output
+all_par_val <- data.frame(cbind(par_analysis[[1]], par_analysis[[6]], par_analysis[[5]], par_analysis[[2]], par_analysis[[4]], par_analysis[[3]]))
+
+#Rename the columns
+names(all_par_val) <- c(names(par_analysis[1]),
+                        names(par_analysis[6]),
+                        names(par_analysis[5]),
+                        names(par_analysis[2]),
+                        names(par_analysis[4]),
+                        names(par_analysis[3]))
+
+#Compute proportion of variance explained by each component individually
+all_par_val$pro_var_com <- all_par_val$pc.values/2 #divide by number of factors
+
+#Compute proportion of total variance explained by component solutions
+all_par_val$pro_cum_var_com <- cumsum(all_par_val$pro_var_com)
+
+all_par_val
+
+round_df <- function(x, digits) {
+    # round all numeric variables
+    # x: data frame 
+    # digits: number of digits to round
+    numeric_columns <- sapply(x, mode) == 'numeric'
+    x[numeric_columns] <-  round(x[numeric_columns], digits)
+    x
+}
+
+all_par_val_round<-round_df(all_par_val, 3)
+
+all_par_val_round
+```
+
+```{r}
+#Velicer's MAP analysis
+vss_map <- vss(df_norm, 3, "varimax", fm = "pc") #second argument is number of components)
+
+#names(vss_map)
+```
+#PCA
+```{r}
+#PCA
+#A custom function to estimate a PCA for a specific number of components. 
+#This function writes output as new objects into the environment
+#more about oblimin rotation here: https://medium.com/@baogorek/what-happens-when-you-rotate-confirmatory-factor-analysis-loadings-d597811a6870
+
+pca_est <- function(x) {
+  txt.read.in.data <- paste0("df_",formatC(x),"c_oblimin <<- principal(df_norm, ",formatC(x),", rotate = 'oblimin')")
+  eval(parse(text=txt.read.in.data))
+} # change df_norm if you want to change df!
+
+
+```
+
+```{r}
+#Create sequence of integers to pass to the function
+comp1 <- seq(1, 1, 1) #second argument is the number of components
+comp2 <- seq(1, 2, 1) #trying out one and two components
+comp3 <- seq(1, 3, 1) #trying out one and two and three components
+
+#Execute PCA function for 1 to 2 component solutions
+pca_sum1 <- lapply(comp1, pca_est)
+pca_sum2 <- lapply(comp2, pca_est)
+pca_sum3 <- lapply(comp3, pca_est)
+
+pca_sum1
+pca_sum2
+pca_sum3
+```
+
+
+```{r}
+#factor scores are the subject's score on a factor
+scores1 <- pca_sum1[[1]]$scores #get factor scores that you can use as observed vars in subsequent analysis
+scores2 <- pca_sum2[[2]]$scores 
+scores3 <- pca_sum3[[3]]$scores 
+
+#factor loadings are the correlation of the original variable with a factor
+pc_load <- pca_sum3[[3]]$loadings #get factor loadings for the factor congruence analysis
+
+```
+
+##Factor congruence across age groups
+#Given two sets of factor loadings, report their degree of #congruence (vector cosine). Although first reported by Burt #(1948), this is frequently known as the Tucker index of factor congruence.
+#https://personality-project.org/r/html/factor.congruence.html
+
+```{r}
+#Running PCA for each age group
+
+#subset df by age groups
+df_norm$Age_group <- df$Age_group
+
+yc <- df_norm[df_norm$Age_group == "child1",-(8)]
+oc <- df_norm[df_norm$Age_group == "child2",-(8)]
+adult <- df_norm[df_norm$Age_group == "adult",-(8)]
+
+#change df name in pca_est function before running the rest!!!!
+#run PCA for each age group df
+pca_yc <- lapply(comp2, pca_est)
+yc_load <- pca_yc[[2]]$loadings
+yc_load <- data.frame(cbind(yc_load))
+
+pca_oc <- lapply(comp2, pca_est)
+oc_load <- pca_oc[[2]]$loadings
+oc_load <- data.frame(cbind(oc_load))
+
+pca_adult <- lapply(comp2, pca_est)
+adult_load <- pca_adult[[2]]$loadings
+adult_load <- data.frame(cbind(adult_load))
+
+```
+
+
+```{r}
+#Factor 1 and 2 within age groups
+
+#younger child
+factor.congruence(yc_load$TC1, yc_load$TC2,digits=3,use="complete",structure=FALSE)
+
+#older child
+factor.congruence(oc_load$TC1, oc_load$TC2,digits=3,use="complete",structure=FALSE)
+
+#adults
+factor.congruence(adult_load$TC1, adult_load$TC2,digits=3,use="complete",structure=FALSE)
+```
+
+```{r}
+#Factor 1 across age groups
+
+#younger vs older
+fa.congruence(yc_load$TC1, oc_load$TC1,digits=3,use="complete",structure=FALSE)
+
+#older vs adult
+fa.congruence(oc_load$TC1, adult_load$TC1,digits=3,use="complete",structure=FALSE)
+
+#younger vs adult
+fa.congruence(yc_load$TC1, adult_load$TC1,digits=3,use="complete",structure=FALSE)
+```
+
+```{r}
+#Factor 2 across age groups
+
+#younger vs older
+fa.congruence(yc_load$TC2, oc_load$TC2,digits=3,use="complete",structure=FALSE)
+
+#older vs adult
+fa.congruence(oc_load$TC2, adult_load$TC2,digits=3,use="complete",structure=FALSE) 
+
+#younger vs adult
+fa.congruence(yc_load$TC2, adult_load$TC2,digits=3,use="complete",structure=FALSE)
+```
+
+##CFA for EFA/PCA factors
+#build models with latent factors
+```{r}
+#model for factor 1
+#get covariance matrices
+cov_mat1 <- cov(df_norm) #only pass in continuous vars
+cov_mat1[upper.tri(cov_mat1)] <- NA #Means to assign NA to the elements above the diagonal
+
+#Define model to be estimated
+m1 <- 'Factor1 =~ NA*PCAccuracy + Lure 
+        Factor1 ~~ 1*Factor1'
+
+#Estimate specified model
+
+m1_fit <- cfa(m1, df_norm, mimic = 'Mplus') # estimator = "MLM", se="robust", std.lv=TRUE)#
+
+#Summary of fit information
+
+fitMeasures(m1_fit, c("npar", "chisq", "df", "pvalue", "cfi", "rmsea", "rmsea.ci.lower", "rmsea.ci.upper", "rmsea.pvalue", "BIC", "AIC")) 
+
+#Return Coefficients
+
+m1_fit_c <- parameterEstimates(m1_fit)
+                   
+m1_fit_sc <-parameterEstimates(m1_fit, standardized = T)
+
+#Visualize model result
+#Raw coefficients
+#semPaths(m1_fit, whatLabels = "par", nCharNodes = 0, rotation = 2, edge.label.cex=1.25,edge.color="black",
+#         sizeMan=10,sizeLat=10,fade=FALSE,esize=2,asize=2)
+
+#Standardized coefficients
+semPaths(m1_fit, whatLabels = "std", nCharNodes = 0, rotation = 2, edge.label.cex=1.25,edge.color="black",
+         sizeMan=10,sizeLat=10,fade=FALSE,esize=2,asize=2)
+
+```
+
+```{r}
+#model for factor 2
+#get covariance matrices
+cov_mat1 <- cov(df_norm)
+cov_mat1[upper.tri(cov_mat1)] <- NA #Means to assign NA to the elements above the diagonal
+
+#Define model to be estimated
+m2 <- 'Factor2 =~ NA*MausQs + MausFR + AM
+        Factor2 ~~ 1*Factor2'
+
+#Estimate specified model
+
+m2_fit <- cfa(m2, df_norm, mimic = 'Mplus')
+
+#Summary of fit information
+
+fitMeasures(m2_fit, c("npar", "chisq", "df", "pvalue", "cfi", "rmsea", "rmsea.ci.lower", "rmsea.ci.upper", "rmsea.pvalue", "BIC", "AIC")) 
+
+#Return Coefficients
+
+m2_fit_c <- parameterEstimates(m2_fit) 
+                   
+m2_fit_sc <-parameterEstimates(m2_fit, standardized = T)
+
+#Visualize model result
+#Raw coefficients
+#semPaths(m2_fit, whatLabels = "par", nCharNodes = 0, rotation = 2, edge.label.cex=1.25,edge.color="black",
+#         sizeMan=10,sizeLat=10,fade=FALSE,esize=2,asize=2)
+
+#Standardized coefficients
+semPaths(m2_fit, whatLabels = "std", nCharNodes = 0, rotation = 2, edge.label.cex=1.25,edge.color="black",
+         sizeMan=10,sizeLat=10,fade=FALSE,esize=2,asize=2)
+```
+
+
+```{r}
+#model for factor 3
+#get covariance matrices
+cov_mat1 <- cov(df_norm)
+cov_mat1[upper.tri(cov_mat1)] <- NA #Means to assign NA to the elements above the diagonal
+
+#Define model to be estimated
+m3 <- 'Factor3 =~ NA*Dependency
+        Factor3 ~~ 1*Factor3'
+
+#Estimate specified model
+
+m3_fit <- cfa(m3, df_norm, mimic = 'Mplus')
+
+#Summary of fit information
+
+fitMeasures(m3_fit, c("npar", "chisq", "df", "pvalue", "cfi", "rmsea", "rmsea.ci.lower", "rmsea.ci.upper", "rmsea.pvalue", "BIC", "AIC")) 
+
+#Return Coefficients
+
+m3_fit_c <- parameterEstimates(m3_fit) 
+                   
+m3_fit_sc <-parameterEstimates(m3_fit, standardized = T)
+
+#Visualize model result
+#Raw coefficients
+#semPaths(m2_fit, whatLabels = "par", nCharNodes = 0, rotation = 2, edge.label.cex=1.25,edge.color="black",
+#         sizeMan=10,sizeLat=10,fade=FALSE,esize=2,asize=2)
+
+#Standardized coefficients
+semPaths(m3_fit, whatLabels = "std", nCharNodes = 0, rotation = 2, edge.label.cex=1.25,edge.color="black",
+         sizeMan=10,sizeLat=10,fade=FALSE,esize=2,asize=2)
+```
+
+```{r}
+#put the two models together
+
+m3 <- 'Factor1 =~ NA*PCAccuracy + Lure
+            Factor1 ~~ 1*Factor1
+            Factor2 =~ NA*MausQs + MausFR + AM
+            Factor2 ~~ 1*Factor2
+            Factor3 =~ NA*Dependency
+            Factor3 ~~ 1*Factor3'
+
+
+m3_fit <- cfa(m3, df_norm, mimic = "Mplus")
+
+fitMeasures(m3_fit, c("npar", "chisq", "df", "pvalue", "cfi", "rmsea", "rmsea.ci.lower", "rmsea.ci.upper", "rmsea.pvalue", "BIC", "AIC")) 
+
+m3_fit_c <- parameterEstimates(m3_fit) 
+                   
+m3_fit_sc <-parameterEstimates(m3_fit, standardized = T)
+
+semPaths(m3_fit, whatLabels = "std", nCharNodes = 0, rotation = 2, edge.label.cex=1.25,edge.color="black",
+         sizeMan=10,sizeLat=10,fade=FALSE,esize=2,asize=2)
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
