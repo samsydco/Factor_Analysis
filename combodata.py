@@ -3,6 +3,7 @@
 import os
 import glob
 import pandas as pd
+from datetime import datetime
 
 
 # paths
@@ -34,8 +35,13 @@ Mausdf['MausQs'] = Mausdf[Qlist].mean(axis=1)
 Mausdf['MausFR'] = Mausdf[FRlist].mean(axis=1)
 Mausdf = Mausdf[['MDEM ID','MausQs','MausFR']]
 Mausdf = Mausdf.rename(columns={'MDEM ID': 'Subject'})
+
 AIdf = pd.read_csv(AIpath+'combodata.csv')
-AIdf = AIdf[['Subject','AM']]
+AIdf = AIdf[['Subject','AM','AM_parent','AM_exp']]
+
+KBITdf = pd.read_csv(AIpath+'R01_KBIT_Age_df.csv')
+KBITdf = KBITdf[['participant_id','Raw KBIT','KBit_Score','Age (months)','demo_child_gender']]
+KBITdf = KBITdf.rename(columns={'participant_id': 'Subject'})
 
 PSdf = pd.read_csv(PSPCpath+'PS_cat_Year_1.csv')
 PSdf = PSdf[['Subject','Target','Lure','Foil','object target selection rate', 'object lure selection rate',
@@ -63,6 +69,8 @@ combodf = pd.merge(Mausdf, AIdf, on='Subject',how='outer',indicator=True)
 combodf = combodf[combodf['_merge'] != 'right_only'] # removing storytelling kids
 combodf = combodf.drop('_merge', axis=1)
 
+combodf = pd.merge(combodf,KBITdf,on='Subject',how='outer',indicator=True)
+combodf = combodf.rename(columns={'_merge': 'mergekbit'})
 
 combodf = pd.merge(combodf, PSdf, on='Subject',how='outer', indicator=True)
 combodf = combodf.rename(columns={'_merge': 'merge1'})
@@ -72,7 +80,8 @@ combodf = pd.merge(combodf, PCdf, on='Subject',how='outer', indicator=True)
 combononan = combodf[combodf['_merge'] != 'left_only']
 combononan = combononan[combononan['AM'].notna()]
 combononan = combononan[combononan['MausQs'].notna()]
-combononan = combononan.drop(['merge1','_merge'], axis=1)
+combononan = combononan[combononan['KBit_Score'].notna()]
+combononan = combononan.drop(['mergekbit','merge1','_merge'], axis=1)
 combononannosubj = combononan.drop('Subject', axis=1)
 
 combononan.to_csv(csvpath+'df_withsubj.csv',index=False)
@@ -91,5 +100,32 @@ df=df.drop(['session_date','redcap_event_name'],axis=1)
 df = df.rename({'demo_age': 'Age','participant_id':'Subject'}, axis='columns')
 
 df_all = combononan.merge(df, on=['Subject'],how='left')
+
+
+# determine delay between session 1 and session 2
+df = pd.read_csv(demofile)
+df = df[df['redcap_event_name'].str.contains("year1")]
+		
+delaylist = []
+for s in df_all['Subject']:
+	dates = list(df[df['participant_id'] == s]['session_date'])
+	delay = (datetime.strptime(dates[1], "%Y-%m-%d") - 
+			 datetime.strptime(dates[0], "%Y-%m-%d")).days
+	delaylist.append({'Subject':s,
+					 'Delay Days':delay})
+delaydf = pd.DataFrame(delaylist)
+
+# determine number of subjects who did each of 3 versions of PSPC
+versiondf = pd.read_csv(PSPCpath+'Dependency_Year_1.csv')
+
+versionlist = []
+for s in df_all['Subject']:
+	delay = versiondf[versiondf['Subject'] == s]['Delay'].iloc[0]
+	samed = versiondf[versiondf['Subject'] == s]['Same Day'].iloc[0]
+	dates = list(df[df['participant_id'] == s]['session_date'])
+	versionlist.append({'Subject':s,
+					 'PSPCversion':str(delay)+str(samed)})
+pspcversiondf = pd.DataFrame(versionlist)
+
 
 
