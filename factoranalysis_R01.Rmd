@@ -59,10 +59,23 @@ df_norm <- scale(data)
 df_norm <- as.data.frame(df_norm)
 # re-order dataframe
 #df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure")] 
-#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM","Dependency","Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')] 
+
+#1) All columns
+#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score','Age..months.','demo_child_gender',"Dependency","Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')] 
+# 1.1) All columns except dependency, age, gender:
+#1) All columns
+#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score',"Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')]
+#2) Eliminating some highly correlated columns (Sub-PCs and PSs, and Sub-AMs):
+#df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM",'Raw.KBIT','KBit_Score','Age..months.','demo_child_gender',"Dependency","Foil","Lure")]
+#3) Eliminating MORE highly correlated columns (Foil, Target, Age):
+#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM",'Raw.KBIT','KBit_Score','demo_child_gender',"Dependency","Lure")]
+# v.2)
+df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM","Dependency","Foil","Lure")]
+df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM","Foil","Lure")]
+
 #df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM","Dependency","Foil","Lure",'PSObjLure','PSLocLure','PSAniLure')] 
 #df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget')]
-df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure",'PSLocLure')] 
+#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure",'PSLocLure')] 
 
 
 
@@ -97,7 +110,7 @@ p.mat <- cor.mtest(corr_matrix)
 ```{r}
 corrplot(corr_matrix,
          method = "shade",
-         addCoef.col = "black",
+         #addCoef.col = "black",
          #p.mat = p.mat,
          #insig = 'n',#"label_sig",
          #sig.level = c(.001,0.01, 0.05),
@@ -220,76 +233,6 @@ scores3 <- pca_sum3[[3]]$scores
 #factor loadings are the correlation of the original variable with a factor
 pc_load <- pca_sum3[[3]]$loadings #get factor loadings for the factor congruence analysis
 
-```
-
-##Factor congruence across age groups
-#Given two sets of factor loadings, report their degree of #congruence (vector cosine). Although first reported by Burt #(1948), this is frequently known as the Tucker index of factor congruence.
-#https://personality-project.org/r/html/factor.congruence.html
-
-```{r}
-#Running PCA for each age group
-
-#subset df by age groups
-df_norm$Age_group <- df$Age_group
-
-yc <- df_norm[df_norm$Age_group == "child1",-(8)]
-oc <- df_norm[df_norm$Age_group == "child2",-(8)]
-adult <- df_norm[df_norm$Age_group == "adult",-(8)]
-
-#change df name in pca_est function before running the rest!!!!
-#run PCA for each age group df
-pca_yc <- lapply(comp2, pca_est)
-yc_load <- pca_yc[[2]]$loadings
-yc_load <- data.frame(cbind(yc_load))
-
-pca_oc <- lapply(comp2, pca_est)
-oc_load <- pca_oc[[2]]$loadings
-oc_load <- data.frame(cbind(oc_load))
-
-pca_adult <- lapply(comp2, pca_est)
-adult_load <- pca_adult[[2]]$loadings
-adult_load <- data.frame(cbind(adult_load))
-
-```
-
-
-```{r}
-#Factor 1 and 2 within age groups
-
-#younger child
-factor.congruence(yc_load$TC1, yc_load$TC2,digits=3,use="complete",structure=FALSE)
-
-#older child
-factor.congruence(oc_load$TC1, oc_load$TC2,digits=3,use="complete",structure=FALSE)
-
-#adults
-factor.congruence(adult_load$TC1, adult_load$TC2,digits=3,use="complete",structure=FALSE)
-```
-
-```{r}
-#Factor 1 across age groups
-
-#younger vs older
-fa.congruence(yc_load$TC1, oc_load$TC1,digits=3,use="complete",structure=FALSE)
-
-#older vs adult
-fa.congruence(oc_load$TC1, adult_load$TC1,digits=3,use="complete",structure=FALSE)
-
-#younger vs adult
-fa.congruence(yc_load$TC1, adult_load$TC1,digits=3,use="complete",structure=FALSE)
-```
-
-```{r}
-#Factor 2 across age groups
-
-#younger vs older
-fa.congruence(yc_load$TC2, oc_load$TC2,digits=3,use="complete",structure=FALSE)
-
-#older vs adult
-fa.congruence(oc_load$TC2, adult_load$TC2,digits=3,use="complete",structure=FALSE) 
-
-#younger vs adult
-fa.congruence(yc_load$TC2, adult_load$TC2,digits=3,use="complete",structure=FALSE)
 ```
 
 ##CFA for EFA/PCA factors
