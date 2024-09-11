@@ -46,6 +46,7 @@ options(digits=3)
 setwd('C:/Users/tuq67942/Desktop/Factor analysis/Analysis/')
 
 df<- read.csv("csvs/df_nosubj.csv")
+df<- read.csv("csvs/residualdf.csv")
 data <- as.data.frame(df)
 
 #subset variables of interest
@@ -61,7 +62,7 @@ df_norm <- as.data.frame(df_norm)
 #df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure")] 
 
 #1) All columns
-#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score','Age..months.','demo_child_gender',"Dependency","Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')] 
+df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score','Age..months.','demo_child_gender',"Dependency","Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')] 
 # 1.1) All columns except dependency, age, gender:
 #1) All columns
 #df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score',"Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')]
@@ -70,14 +71,28 @@ df_norm <- as.data.frame(df_norm)
 #3) Eliminating MORE highly correlated columns (Foil, Target, Age):
 #df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM",'Raw.KBIT','KBit_Score','demo_child_gender',"Dependency","Lure")]
 # v.2)
-df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM","Dependency","Foil","Lure")]
-df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM","Foil","Lure")]
+
+#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM",'Raw.KBIT','KBit_Score',"Dependency","Lure")]
+#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure")]
+df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Target")]
 
 #df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM","Dependency","Foil","Lure",'PSObjLure','PSLocLure','PSAniLure')] 
 #df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget')]
 #df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure",'PSLocLure')] 
 
+df<- read.csv("csvs/residualdf.csv")
+data <- as.data.frame(df)
 
+#subset variables of interest
+# More info on invertability:
+# https://stackoverflow.com/questions/50928796/system-is-computationally-singular-reciprocal-condition-number-in-r
+#data <- subset(data, select = -c(Foil,Target)) # dropping foil to see if matrix is now invertable, dropping Target because it's so similar to Lure, dropping dependency  because it doesn't correlate with other variables
+summary(data)
+
+#normalize data
+df_norm <- scale(data)
+df_norm <- as.data.frame(df_norm)
+df_norm <- df_norm[, c("Relational.Binding","Mnemonic.discrimination..Target.","Probed.Question.Accuracy","Free.Recall.Accuracy","Autobiographical.Memory")]
 
 ```
 
@@ -110,7 +125,7 @@ p.mat <- cor.mtest(corr_matrix)
 ```{r}
 corrplot(corr_matrix,
          method = "shade",
-         #addCoef.col = "black",
+         addCoef.col = "black",
          #p.mat = p.mat,
          #insig = 'n',#"label_sig",
          #sig.level = c(.001,0.01, 0.05),
@@ -165,7 +180,7 @@ names(all_par_val) <- c(names(par_analysis[1]),
                         names(par_analysis[3]))
 
 #Compute proportion of variance explained by each component individually
-all_par_val$pro_var_com <- all_par_val$pc.values/2 #divide by number of factors
+all_par_val$pro_var_com <- all_par_val$pc.values/8 #divide by number of factors
 
 #Compute proportion of total variance explained by component solutions
 all_par_val$pro_cum_var_com <- cumsum(all_par_val$pro_var_com)
@@ -220,7 +235,7 @@ pca_sum3 <- lapply(comp3, pca_est)
 
 pca_sum1
 pca_sum2
-pca_sum3
+pca_sum3[[3]]
 ```
 
 
@@ -244,7 +259,7 @@ cov_mat1 <- cov(df_norm) #only pass in continuous vars
 cov_mat1[upper.tri(cov_mat1)] <- NA #Means to assign NA to the elements above the diagonal
 
 #Define model to be estimated
-m1 <- 'Factor1 =~ NA*PCAccuracy + Lure 
+m1 <- 'Factor1 =~ NA*PCAccuracy + Lure
         Factor1 ~~ 1*Factor1'
 
 #Estimate specified model
