@@ -21,7 +21,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 #install.packages('RColorBrewer')
 #install.packages("ggplot2")
 #install.packages("corrplot")
-# install.packages("viridis")  # Install
+#install.packages("viridis")  # Install
 
 library("viridis")           # Load
 library(ggplot2)
@@ -46,7 +46,7 @@ options(digits=3)
 setwd('C:/Users/tuq67942/Desktop/Factor analysis/Analysis/')
 
 df<- read.csv("csvs/df_nosubj.csv")
-df<- read.csv("csvs/residualdf.csv")
+#df<- read.csv("csvs/residualdf.csv")
 data <- as.data.frame(df)
 
 #subset variables of interest
@@ -62,7 +62,7 @@ df_norm <- as.data.frame(df_norm)
 #df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure")] 
 
 #1) All columns
-df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score','Age..months.','demo_child_gender',"Dependency","Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')] 
+#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score','Age..months.','demo_child_gender',"Dependency","Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')] 
 # 1.1) All columns except dependency, age, gender:
 #1) All columns
 #df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score',"Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')]
@@ -246,7 +246,9 @@ scores2 <- pca_sum2[[2]]$scores
 scores3 <- pca_sum3[[3]]$scores 
 
 #factor loadings are the correlation of the original variable with a factor
-pc_load <- pca_sum3[[3]]$loadings #get factor loadings for the factor congruence analysis
+pc_load <- pca_sum2[[2]]$loadings #get factor loadings for the factor congruence analysis
+
+write.csv(scores2, "csvs/scores2.csv")
 
 ```
 
