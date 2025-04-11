@@ -4,6 +4,8 @@ import os
 import glob
 import pandas as pd
 from datetime import datetime
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 # paths
@@ -112,8 +114,14 @@ for s in df_all['Subject']:
 	delay = (datetime.strptime(dates[1], "%Y-%m-%d") - 
 			 datetime.strptime(dates[0], "%Y-%m-%d")).days
 	delaylist.append({'Subject':s,
-					 'Delay Days':delay})
+					 'Delay (Days)':delay})
 delaydf = pd.DataFrame(delaylist)
+
+sns.set_theme(style="ticks",font_scale=1.5)
+f, ax = plt.subplots(figsize=(7, 5))
+sns.despine(f)
+g = sns.histplot(delaydf,x='Delay (Days)',binwidth=1)
+f.savefig('Figures/Supp2.png', dpi=300,bbox_inches="tight",format='png')
 
 # determine number of subjects who did each of 3 versions of PSPC
 versiondf = pd.read_csv(PSPCpath+'Dependency_Year_1.csv')
