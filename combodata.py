@@ -6,6 +6,7 @@ import pandas as pd
 from datetime import datetime
 import seaborn as sns
 import matplotlib.pyplot as plt
+import math
 
 
 # paths
@@ -114,14 +115,27 @@ for s in df_all['Subject']:
 	delay = (datetime.strptime(dates[1], "%Y-%m-%d") - 
 			 datetime.strptime(dates[0], "%Y-%m-%d")).days
 	delaylist.append({'Subject':s,
-					 'Delay (Days)':delay})
+					 'Delay (Days)':delay,
+					 'Age':math.floor(df_all[df_all['Subject'] == s]['Age'].iloc[0])})
 delaydf = pd.DataFrame(delaylist)
+combodf = pd.merge(delaydf, combononan, on='Subject',how='outer',indicator=True)
+combodf = combodf.drop(['Subject','_merge'], axis=1)
+combodf.to_csv(csvpath+'delaydf.csv',index=False)
 
 sns.set_theme(style="ticks",font_scale=1.5)
 f, ax = plt.subplots(figsize=(7, 5))
 sns.despine(f)
-g = sns.histplot(delaydf,x='Delay (Days)',binwidth=1)
+palette = sns.hls_palette(4)
+g = sns.histplot(delaydf,x='Delay (Days)',hue="Age", multiple="stack",binwidth=1,palette=palette)
+sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 f.savefig('Figures/Supp2.png', dpi=300,bbox_inches="tight",format='png')
+
+def find_outliers_IQR(df):
+	q1=df.quantile(0.25)
+	q3=df.quantile(0.75)
+	IQR=q3-q1
+	outliers = df[((df<(q1-1.5*IQR)) | (df>(q3+1.5*IQR)))]
+	return outliers
 
 # determine number of subjects who did each of 3 versions of PSPC
 versiondf = pd.read_csv(PSPCpath+'Dependency_Year_1.csv')
@@ -134,6 +148,8 @@ for s in df_all['Subject']:
 	versionlist.append({'Subject':s,
 					 'PSPCversion':str(delay)+str(samed)})
 pspcversiondf = pd.DataFrame(versionlist)
-
+combodf = pd.merge(pspcversiondf, combononan, on='Subject',how='outer',indicator=True)
+combodf = combodf.drop(['Subject','_merge'], axis=1)
+combodf.to_csv(csvpath+'delaydf.csv',index=False)
 
 
