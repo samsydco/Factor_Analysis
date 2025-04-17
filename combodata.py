@@ -119,8 +119,7 @@ for s in df_all['Subject']:
 					 'Age':math.floor(df_all[df_all['Subject'] == s]['Age'].iloc[0])})
 delaydf = pd.DataFrame(delaylist)
 combodf = pd.merge(delaydf, combononan, on='Subject',how='outer',indicator=True)
-combodf = combodf.drop(['Subject','_merge'], axis=1)
-combodf.to_csv(csvpath+'delaydf.csv',index=False)
+combodf = combodf.drop(['_merge'], axis=1)
 
 sns.set_theme(style="ticks",font_scale=1.5)
 f, ax = plt.subplots(figsize=(7, 5))
@@ -148,8 +147,26 @@ for s in df_all['Subject']:
 	versionlist.append({'Subject':s,
 					 'PSPCversion':str(delay)+str(samed)})
 pspcversiondf = pd.DataFrame(versionlist)
-combodf = pd.merge(pspcversiondf, combononan, on='Subject',how='outer',indicator=True)
+combodf = pd.merge(pspcversiondf, combodf, on='Subject',how='outer',indicator=True)
 combodf = combodf.drop(['Subject','_merge'], axis=1)
+combodf['DelayPSPC'] = combodf['Delay (Days)']
+filter_ = combodf['PSPCversion'].str.contains('False')
+idx = combodf[ filter_ ].index
+combodf.loc[idx, "DelayPSPC"] = 0
 combodf.to_csv(csvpath+'delaydf.csv',index=False)
+
+
+combodf = combodf.drop(['Delay (Days)'], axis=1)
+combodf = combodf.rename({'DelayPSPC': 'Delay (Days)'}, axis='columns')
+# Create a figure displaying all possible delays for PSPC task:
+sns.set_theme(style="ticks",font_scale=1.5)
+f, ax = plt.subplots(figsize=(7, 5))
+sns.despine(f)
+palette = sns.hls_palette(4)
+g = sns.histplot(combodf,x='Delay (Days)',hue="Age", multiple="stack",binwidth=1,palette=palette)
+sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+f.savefig('Figures/Supp3.png', dpi=300,bbox_inches="tight",format='png')
+
+
 
 
