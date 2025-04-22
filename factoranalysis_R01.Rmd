@@ -45,41 +45,6 @@ options(digits=3)
 
 setwd('C:/Users/tuq67942/Desktop/Factor analysis/Analysis/')
 
-df<- read.csv("csvs/df_nosubj.csv")
-#df<- read.csv("csvs/residualdf.csv")
-data <- as.data.frame(df)
-
-#subset variables of interest
-# More info on invertability:
-# https://stackoverflow.com/questions/50928796/system-is-computationally-singular-reciprocal-condition-number-in-r
-#data <- subset(data, select = -c(Foil,Target)) # dropping foil to see if matrix is now invertable, dropping Target because it's so similar to Lure, dropping dependency  because it doesn't correlate with other variables
-summary(data)
-
-#normalize data
-df_norm <- scale(data)
-df_norm <- as.data.frame(df_norm)
-# re-order dataframe
-#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure")] 
-
-#1) All columns
-#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score','Age..months.','demo_child_gender',"Dependency","Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')] 
-# 1.1) All columns except dependency, age, gender:
-#1) All columns
-#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget',"MausQs","MausFR","AM",'AM_parent','AM_exp','Raw.KBIT','KBit_Score',"Foil",'PSObjFoil','PSLocFoil','PSAniFoil',"Lure",'PSObjLure','PSLocLure','PSAniLure')]
-#2) Eliminating some highly correlated columns (Sub-PCs and PSs, and Sub-AMs):
-#df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM",'Raw.KBIT','KBit_Score','Age..months.','demo_child_gender',"Dependency","Foil","Lure")]
-#3) Eliminating MORE highly correlated columns (Foil, Target, Age):
-#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM",'Raw.KBIT','KBit_Score','demo_child_gender',"Dependency","Lure")]
-# v.2)
-
-#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM",'Raw.KBIT','KBit_Score',"Dependency","Lure")]
-#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure")]
-df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Target")]
-
-#df_norm <- df_norm[, c("PCAccuracy","Target","MausQs","MausFR","AM","Dependency","Foil","Lure",'PSObjLure','PSLocLure','PSAniLure')] 
-#df_norm <- df_norm[, c("PCAccuracy",'LocAniLink','AniObjLink','AniLocLink','ObjAniLink','LocObjLink','ObjLocLink',"Target",'PSObjTarget','PSLocTarget','PSAniTarget')]
-#df_norm <- df_norm[, c("PCAccuracy","MausQs","MausFR","AM","Dependency","Lure",'PSLocLure')] 
-
 df<- read.csv("csvs/residualdf.csv")
 data <- as.data.frame(df)
 
