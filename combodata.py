@@ -130,7 +130,7 @@ sns.despine(f)
 palette = sns.hls_palette(4)
 g = sns.histplot(delaydf,x='Delay (Days)',hue="Age", multiple="stack",binwidth=1,palette=palette)
 sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-f.savefig('Figures/Supp2.png', dpi=300,bbox_inches="tight",format='png')
+f.savefig('Figures/Supp3.png', dpi=300,bbox_inches="tight",format='png')
 
 def find_outliers_IQR(df):
 	q1=df.quantile(0.25)
@@ -168,7 +168,7 @@ sns.despine(f)
 palette = sns.hls_palette(4)
 g = sns.histplot(combodf,x='Delay (Days)',hue="Age", multiple="stack",binwidth=1,palette=palette)
 sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-f.savefig('Figures/Supp3.png', dpi=300,bbox_inches="tight",format='png')
+f.savefig('Figures/Supp4.png', dpi=300,bbox_inches="tight",format='png')
 
 
 
