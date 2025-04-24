@@ -87,6 +87,9 @@ combononan = combononan[combononan['KBit_Score'].notna()]
 combononan = combononan.drop(['mergekbit','merge1','_merge'], axis=1)
 combononannosubj = combononan.drop('Subject', axis=1)
 
+combodf = combodf[combodf['Subject'] != 'TEST']
+combodf['has_nan'] = combodf.isnull().any(axis=1)
+combodf.to_csv(csvpath+'df_withnan.csv',index=False)
 combononan.to_csv(csvpath+'df_withsubj.csv',index=False)
 combononannosubj.to_csv(csvpath+'df_nosubj.csv',index=False)
 
