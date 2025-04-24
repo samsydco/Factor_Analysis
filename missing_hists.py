@@ -39,4 +39,4 @@ for i,c in enumerate(cols):
 		sns.move_legend(axes[row,col], "upper left", bbox_to_anchor=(1, 1))
 	else:
 		g.legend([],[], frameon=False)
-f.savefig('Figures/Supp_missinghists.png', dpi=300,bbox_inches="tight",format='png')
+f.savefig('Figures/SuppFig2.png', dpi=300,bbox_inches="tight",format='png')
