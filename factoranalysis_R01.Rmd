@@ -45,7 +45,7 @@ options(digits=3)
 
 setwd('C:/Users/tuq67942/Desktop/Factor analysis/Analysis/')
 
-df<- read.csv("csvs/residualdf.csv")
+df<- read.csv("csvs/residualdf.csv") #read.csv("csvs/residualdf_noout.csv")
 data <- as.data.frame(df)
 
 #subset variables of interest
